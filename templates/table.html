@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Execute Command</title>
+	<script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			$("#execSleepID").on("click", function() {
+				var vYear = $("#id_year").prop('value');
+				var vMon = document.getElementById("id_mon").value;
+				var vDay = document.getElementById("id_day").value;
+				
+				var vHr = document.getElementById("id_hr").value;
+				var vMin = document.getElementById("id_min").value;
+				var vSec = document.getElementById("id_sec").value;
+				$.ajax({
+					url: "/sleep",
+					method: "GET",
+					data: {
+						'year': vYear,
+						'mon': vMon,
+						'day': vDay,
+						'hr': vHr,
+						'min': vMin,
+						'sec': vSec
+					},
+					success: function(data) {
+						$("#responseSleep").html(data);
+					},
+					error: function (msg) { // ajax請求失敗後觸發的方法
+						alert(msg); // 彈出錯誤信息
+					}
+				});
+			});
+		});
+	</script>
+			
+	<script type="text/javascript">
+		$(document).ready(function() {
+			$("#execHeartRateID").on("click", function() {
+				var vYear = $("#id_year").prop('value');
+				var vMon = document.getElementById("id_mon").value;
+				var vDay = document.getElementById("id_day").value;
+				
+				var vHr = document.getElementById("id_hr").value;
+				var vMin = document.getElementById("id_min").value;
+				var vSec = document.getElementById("id_sec").value;
+				$.ajax({
+					url: "/heartRate",
+					//data: {'val1':"AB", 'val2', "CD"},
+					//dataType: "json" // 後台處理後返回的數據格式
+					method: "GET",
+					data: {
+						'year': vYear,
+						'mon': vMon,
+						'day': vDay,
+						'hr': vHr,
+						'min': vMin,
+						'sec': vSec
+					},
+					success: function(data) {
+						$("#responseHeartRate").html(data);
+					},
+					error: function (msg) { // ajax請求失敗後觸發的方法
+						alert(msg); // 彈出錯誤信息
+					}
+				});
+			});
+		});
+	</script>
+		
+	<script type="text/javascript">
+		//var textValue = $("output[name=dx]").val();
+		//var textValue = $("#input[name=in_name]").value;
+		//var textValue = document.getElementById("demo").value;
+		//var tname = document.getElementsByTagName("dx");
+		$(document).ready(function() {
+			$("#execActivitiesID").on("click", function() {
+			//	$("button").click(function() {
+					var vYear = $("#id_year").prop('value');
+					var vMon = document.getElementById("id_mon").value;
+					var vDay = document.getElementById("id_day").value;
+					
+					var vHr = document.getElementById("id_hr").value;
+					var vMin = document.getElementById("id_min").value;
+					var vSec = document.getElementById("id_sec").value;
+				$.ajax({
+					//async：true，
+					method: "GET",
+				    //type: "get",//數據發送的方式（post 或者 get）
+					url: "/activities",//要發送的後台地址
+					//要發送的數據（參數）格式為{'val1':"1","val2":"2"}
+					data: {
+						'year': vYear,
+						'mon': vMon,
+						'day': vDay,
+						'hr': vHr,
+						'min': vMin,
+						'sec': vSec
+					},
+					//dataType: "json",//後台處理後返回的數據格式
+					success: function (data) {//ajax請求成功後觸發的方法
+						//alert(data)
+						$("#responseActivities").html(data);
+						//$("#response3").html(arr);
+					},
+					error: function (msg) { // ajax請求失敗後觸發的方法
+						alert(msg); // 彈出錯誤信息
+					}
+				});
+			});
+		});
+	</script>
+		
+		<script type="text/javascript">
+			$(document).ready(function() {
+				$("#execUserProfileID").on("click", function() {
+					var vYear = $("#id_year").prop('value');
+					var vMon = document.getElementById("id_mon").value;
+					var vDay = document.getElementById("id_day").value;
+				
+					var vHr = document.getElementById("id_hr").value;
+					var vMin = document.getElementById("id_min").value;
+					var vSec = document.getElementById("id_sec").value;
+					$.ajax({
+						url: "/userProfile",
+						//data: {'val1':"AB", 'val2', "CD"},
+						//dataType: "json" // 後台處理後返回的數據格式
+						method: "GET",
+						data: {
+							'year': vYear,
+							'mon': vMon,
+							'day': vDay,
+							'hr': vHr,
+							'min': vMin,
+							'sec': vSec
+						},
+						success: function(data) {
+							$("#responseUserProfile").html(data);
+						},
+						error: function (msg) { // ajax請求失敗後觸發的方法
+							alert(msg); // 彈出錯誤信息
+						}
+					});
+				});
+			});
+		</script>
+				
+</head>
+
+<body>
+	<button id="execSleepID">GET SLEEP</button>
+	<div id="responseSleep"></div><br>
+	
+	<button id="execHeartRateID">GET HEART RATE</button>
+	<div id="responseHeartRate"></div>
+	<br>
+	<button id="execActivitiesID">GET ACTIVITIES</button>
+	<div id="responseActivities"></div>	
+	<br>
+	<button id="execUserProfileID">GET USER PROFILE</button>
+	<div id="responseUserProfile"></div>	
+	<br>
+	
+<!-- 年 -->	
+	<p>年 月 日 </p>
+	<form oninput="dx.value=parseInt(id_year.value)">年 : 
+	<input type="range" min="2018" max="2019" id="id_year" value="2018" name="in_name">
+	= <output id="gox" name="dx" for="id_year"></output>
+	</form>
+<!-- 月 -->
+	<form oninput="x_mon.value=parseInt(id_mon.value)">月 : 
+	<input type="range" min="10" max="11" id="id_mon" value="10">
+	= <output name="x_mon" for="id_mon"></output>
+	</form>
+	
+<!-- 日 -->
+	<form oninput="x_day.value=parseInt(id_day.value)">日 : 
+	<input type="range" min="1" max="31" id="id_day" value="15">
+	= <output name="x_day" for="id_day"></output> 
+	</form>
+		
+		<br>
+<!-- 時 -->
+	<form oninput="x_hr.value=parseInt(id_hr.value)">時 : 
+	<input type="range" min="0" max="23" id="id_hr" value="12">
+	= <output name="x_hr" for="id_hr"></output>
+	</form>
+			
+<!-- 分 -->
+	<form oninput="x_min.value=parseInt(id_min.value)">分 : 
+	<input type="range" min="0" max="59" id="id_min" value="30">
+	= <output name="x_min" for="id_min"></output>
+	</form>
+							
+<!-- 秒 -->
+	<form oninput="x_sec.value=parseInt(id_sec.value)"> 秒 : 
+	<input type="range" min="0" max="59" id="id_sec" value="30">
+	= <output name="x_sec" for="id_sec"></output>
+	</form>
+	
+	
+</body>
+
+</html>
+
+<!--
+	<div id="responseActivities"><h2>Let jQuery AJAX Change this Text</h2></div>
+	<div><p id="px">This is a paragraph.</p></div>
+	<div id="response3"></div>
+	<button type="button" onclick="loadDoc()">Request data</button>
+	
+	<p id="demoX"></p>
+-->
+
+<!--
+
+	<p>年 月 日 </p>
+	<form oninput="dx.value=parseInt(id_year.value)">2010
+	<input type="range" min="2010" max="2030" id="id_year" value="2020" name="in_name">2030
+	= <output id="gox" name="dx" for="id_year"></output> 年
+	</form>
+
+	<form oninput="x.value=parseInt(id_mon.value)">1
+	<input type="range" min="1" max="12" id="id_mon" value="6">12
+	= <output name="x" for="id_mon"></output> 月
+	</form>
+	
+
+	<form oninput="x.value=parseInt(id_day.value)">1
+	<input type="range" min="1" max="31" id="id_day" value="15">31
+	= <output name="x" for="id_day"></output> 日
+	</form>
+		
+		<br>
+
+	<form oninput="x.value=parseInt(id_hr.value)">0
+	<input type="range" min="0" max="23" id="id_hr" value="12">23
+	= <output name="x" for="id_hr"></output> 時
+	</form>
+			
+
+	<form oninput="x.value=parseInt(id_min.value)">0
+	<input type="range" min="0" max="59" id="id_min" value="30">59
+	= <output name="x" for="id_min"></output> 分
+	</form>
+							
+
+	<form oninput="x.value=parseInt(id_sec.value)">0
+	<input type="range" min="0" max="59" id="id_sec" value="30">59
+	= <output name="x" for="id_sec"></output> 秒
+	</form>
+
+	<script>
+	document.getElementById("demoX").innerHTML = 5 + 6 ;
+	document.getElementById("px").innerHTML = document.getElementById("in_dea").value;
+	</script>
+
+	Points: <input type="range" id="myRange" value="20">
+	<p id="demoB"></p>
+	
+	<button onclick="myFunction()">Try it</button>
+	
+	<script>
+	function myFunction() {
+		//var myElement = $("#in_dea").prop('value');
+		var x = document.getElementById("in_dea").value;
+	    //var x = document.getElementById("myRange").value;
+	    document.getElementById("demoB").innerHTML = x;
+	}
+	</script>
+	<script type="text/javascript">
+		
+		//var x = document.getElementById("myRange").value;
+		//document.getElementById("demoB").innerHTML = x;
+		//document.getElementById("demo").innerHTML = "The value of z is: " + z;
+		//var myElement = document.getElementById("in_dea").value;
+		//var myElement = document.getElementById("gox");
+		//var myElement = 303;
+		//var textValue = document.getElementById('in_dea');
+		//var myElement = $("#in_dea").val();
+		
+		//var myElement = $("#in_dea").prop('value');
+		//var textValue = document.getElementById('px');
+		//var textValue = $("document.getElementById("dea")").val();
+		//var textValue = $("output[name=dx]").val();
+		//var textValue = $("#input[name=in_name]").value;
+		//var textValue = document.getElementById("demo").value;
+		//textValue = 9;
+		//var tname = document.getElementsByTagName("dx");
+		$(document).ready(function() {
+			//$("#execID3").on("click", function() {
+				
+				$("button").click(function() {
+					var myElement = $("#in_dea").prop('value');
+					var textValue = document.getElementById("myRange").value;
+					document.getElementById("demoB").innerHTML = textValue;
+				$.ajax({
+					//async：true，
+					method: "GET",
+				    //type: "get",//數據發送的方式（post 或者 get）
+					url: "/dataPath",//要發送的後台地址
+					//要發送的數據（參數）格式為{'val1':"1","val2":"2"}
+					data: {
+						'valt': textValue, //tname,//z,
+						'valx': myElement,//z,
+						//'valx': $('#dea').val(), 
+						'val0': 1234, 
+						'val1':"#myElement", 
+						'val2':"B2"
+					},
+					//data: {'val1':(myElement).toString(), 'val2':"B2"},
+					//data: {'val1':"2018-11-01", 'val2':"B2"},
+					//dataType: "json",//後台處理後返回的數據格式
+					success: function (data) {//ajax請求成功後觸發的方法
+						var arr = $('input[name="dea"]').val();
+						//var arr = eval("TURN ON ...");
+						//var arr = eval("("+data+")");
+						//for(var i = 0;i<arr.result.length;i++){                							$(".xianshi").append(arr.result[i].sname+":"+arr.result[i].sprice+":"+arr.result[i].cou+"<br>")
+						//}
+						alert(data)
+						$("#response3").html(data);
+						//$("#response3").html(arr);
+					},
+					//error: function (msg) { // ajax請求失敗後觸發的方法
+					//	alert(msg); // 彈出錯誤信息
+					//}
+				});
+			});
+		});
+	</script>
+
+	<script>
+	function loadDoc() {
+	  var xhttp = new XMLHttpRequest();
+	  xhttp.onreadystatechange = function() {
+	    if (this.readyState == 4 && this.status == 200) {
+	      document.getElementById("demoX").innerHTML = this.responseText;
+	    }
+	  };
+	  //xhttp.open("GET", "demo_get2.asp?fname=Henry&lname=Ford", true);
+	  xhttp.open("GET", "ajax_info.txt", true);
+	  xhttp.send();
+	}
+	</script>
+-->

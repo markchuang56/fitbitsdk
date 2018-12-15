@@ -1,59 +1,78 @@
-package main
+package fbitsdk
 
 import (
 	"bytes"
 	"context"
 	"fmt"
 
-	"encoding/base64"
+	//"encoding/base64"
 	"encoding/gob"
 	"encoding/json"
+	//"encoding/xml"
 
+	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/fitbit"
+	//"golang.org/x/oauth2/fitbit"
 	"io/ioutil"
 
 	//"errors"
 	"io"
 	"strings"
+	"time"
 
 	//"log"
 	"net/http"
 	"net/url"
 	//"time"
-	"html/template"
+	//"html/template"
 	"os"
 )
 
+type Token struct {
+	// AccessToken is the token that authorizes and authenticates
+	// the requests.
+	AccessToken string `json:"access_token"`
+
+	// TokenType is the type of token.
+	// The Type method returns either this or "Bearer", the default.
+	TokenType string `json:"token_type,omitempty"`
+
+	// RefreshToken is a token that's used by the application
+	// (as opposed to the user) to refresh the access token
+	// if it expires.
+	RefreshToken string `json:"refresh_token,omitempty"`
+
+	// Expiry is the optional expiration time of the access token.
+	//
+	// If zero, TokenSource implementations will reuse the same
+	// token forever and RefreshToken or equivalent
+	// mechanisms for that TokenSource will not be used.
+	Expiry time.Time `json:"expiry,omitempty"`
+
+	UserId string
+	// raw optionally contains extra metadata from the server
+	// when updating a token.
+	raw interface{}
+}
+
 var (
-	store = sessions.NewCookieStore([]byte(os.Getenv("COOKIE_SECRET")), []byte(os.Getenv("COOKIE_ENCRYPT")))
-
+	//store = sessions.NewCookieStore([]byte(os.Getenv("COOKIE_SECRET")), []byte(os.Getenv("COOKIE_ENCRYPT")))
+	store = sessions.NewCookieStore(securecookie.GenerateRandomKey(32),
+		securecookie.GenerateRandomKey(16))
 	oauthConfig = &oauth2.Config{
-		ClientID:     os.Getenv("FITBIT_OAUTH_ID"),
-		ClientSecret: os.Getenv("FITBIT_OAUTH_SECRET"),
-		Endpoint:     fitbit.Endpoint,
-
+		RedirectURL: "http://localhost:8020/cb",
 		Scopes:      []string{"activity", "heartrate", "location", "nutrition", "profile", "settings", "sleep", "social", "weight"},
-		RedirectURL: "https://fathomless-shore-18884.herokuapp.com/callback",
-
-		//Endpoint: oauth2.Endpoint{
-		//	AuthURL:  "https://www.fitbit.com/oauth2/authorize",
-		//	TokenURL: "https://api.fitbit.com/oauth2/token",
-		//},
-		// See https://devcenter.heroku.com/articles/oauth#scopes
-		//RedirectURL: "https://" + os.Getenv("HEROKU_APP_NAME") + "herokuapp.com/auth/heroku/callback", // See
-		//
-		//ClientID:     "22DD2F",
-		//ClientSecret: "a62ee79d8e9ab5b3f6e99c6a775a16b5",
-		//RedirectURL:  "http://127.0.0.1:8020/callback",
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  "https://www.fitbit.com/oauth2/authorize",
+			TokenURL: "https://api.fitbit.com/oauth2/token",
+		},
+		ClientID:     "22D6FQ",
+		ClientSecret: "be9c1fb74ca0d6b8c93deb35ba305093",
 	}
-
-	stateToken = os.Getenv("FITBIT_APP_NAME")
-
-	homeTmpl          = template.Must(template.New("home").ParseFiles("templates/sleep.html"))
-	homeLoggedOutTmpl = template.Must(template.New("loggout").ParseFiles("templates/loggedout.html"))
+	stateToken  = os.Getenv("FITBIT_APP_NAME")
+	globalToken = new(oauth2.Token)
 )
 
 func init() {
@@ -63,16 +82,8 @@ func init() {
 	store.Options.Secure = true
 }
 
-func handleRoot(w http.ResponseWriter, r *http.Request) {
-	//fmt.Fprint(w, `<html><body><a href="/auth/fitbit">Sign in with Fitbit</a></body></html>`)
-	w.Header().Set("Content-Type", "text/html; charset-utf-8") //
-	if err := homeLoggedOutTmpl.ExecuteTemplate(w, "loggedout.html", nil); err != nil {
-		//if err := homeTmpl.ExecuteTemplate(w, "sleep.html", nil); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func handleAuth(w http.ResponseWriter, r *http.Request) {
+// USER INIT
+func HandleAuth(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("state Token")
 	//fmt.Println(store["COOKIE_SECRET"])
 	//fmt.Println(store["COOKIE_ENCRYPT"])
@@ -84,35 +95,35 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url, http.StatusFound)
 }
 
-func handleAuthCallback(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("=== FIIBIT CALLBACK ===")
+// Return Token
+func HandleAuthCallback(w http.ResponseWriter, r *http.Request) (*Token, error) {
+	fmt.Println("=== SDK CALLBACK ===")
 
 	if v := r.FormValue("state"); v != stateToken {
 		http.Error(w, "Invalid State token", http.StatusBadRequest)
-		return
+		return nil, nil
 	}
 	ctx := context.Background()
 	fmt.Println(ctx)
 	fmt.Println()
-	//fmt.Println(r)
-	fmt.Println()
 	fmt.Println(r.FormValue("code"))
 	token, err := oauthConfig.Exchange(ctx, r.FormValue("code"))
 	if err != nil {
+		fmt.Println("== CB ERROR ==")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, err
 	}
 
 	session, err := store.Get(r, "fitbit-oauth-go")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, err
 	}
 	fmt.Println(session)
 	session.Values["fitbit-oauth-token"] = token
 	if err := session.Save(r, w); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, err
 	}
 
 	var xt oauth2.Token
@@ -122,6 +133,7 @@ func handleAuthCallback(w http.ResponseWriter, r *http.Request) {
 	reqBodyBytes := new(bytes.Buffer)
 	json.NewEncoder(reqBodyBytes).Encode(token)
 	err = json.Unmarshal(reqBodyBytes.Bytes(), &xt)
+
 	//reqBodyBytes.Bytes() // this is the []byte
 	//if err := json.Unmarshal(byt, &obj); err != nil {
 	//    panic(err)
@@ -129,41 +141,176 @@ func handleAuthCallback(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println("=== ERROR ===")
 		panic(err)
+		return nil, err
 	}
+
+	err = json.Unmarshal(reqBodyBytes.Bytes(), &globalToken)
 
 	fmt.Println("=== FIIBIT CALLBACK 2 ===")
 
 	fmt.Println("=== TOKEN ===")
-	fmt.Println(reqBodyBytes.Bytes())
+
 	fmt.Println(xt)
-	fmt.Println(reqBodyBytes.String())
-	//fmt.Println(token["AccessToken"])
-	fmt.Println()
+	xtoken := Token{}
+	xtoken.AccessToken = token.AccessToken
+	xtoken.TokenType = token.TokenType
+	xtoken.RefreshToken = token.RefreshToken
+	xtoken.Expiry = token.Expiry
 
-	fmt.Println()
-	fmt.Println("AccessToken")
-	fmt.Println(token.AccessToken)
-	fmt.Println()
+	uid, err := sdkGetUserProfile(w, r, token)
+	if err != nil {
+		return nil, err
+	}
+	xtoken.UserId = uid
+	fmt.Println(len(uid))
+	return &xtoken, nil
+	/*
 
-	fmt.Println("TokenType")
-	fmt.Println(token.TokenType)
-	fmt.Println()
 
-	fmt.Println("RefreshToken")
-	fmt.Println(token.RefreshToken)
-	fmt.Println()
+		fmt.Println("GOOD!!")
+		//http.Redirect(w, r, "/user", http.StatusFound)
+		http.Redirect(w, r, "/userProfile", http.StatusFound)
+		//http.Redirect(w, r, "/sleep", http.StatusFound)
+		//http.Redirect(w, r, "/heartRate", http.StatusFound)
+		//http.Redirect(w, r, "/activities", http.StatusFound)
+		//http.Redirect(w, r, "/bodyWeight", http.StatusFound)
+	*/
+}
 
-	fmt.Println("Expiry")
-	fmt.Println(token.Expiry)
-	fmt.Println()
+func sdkGetUserProfile(w http.ResponseWriter, r *http.Request, token *oauth2.Token) (string, error) {
+	fmt.Println("==== SERVE GET USER PROFILE ====")
 
-	fmt.Println("GOOD!!")
-	//http.Redirect(w, r, "/user", http.StatusFound)
-	http.Redirect(w, r, "/userProfile", http.StatusFound)
-	//http.Redirect(w, r, "/sleep", http.StatusFound)
-	//http.Redirect(w, r, "/heartRate", http.StatusFound)
-	//http.Redirect(w, r, "/activities", http.StatusFound)
-	//http.Redirect(w, r, "/bodyWeight", http.StatusFound)
+	ctx := context.Background()
+
+	var body io.Reader
+	v := url.Values{
+		"token": {token.AccessToken},
+	}
+	body = strings.NewReader(v.Encode())
+
+	//uProfile := "https://api.fitbit.com/1/user/6Z29KN/profile.json"
+	uProfile := "https://api.fitbit.com/1/user/-/profile.json"
+	req, err := http.NewRequest(http.MethodGet, uProfile, body)
+
+	if err != nil {
+		//fmt.Println("NEW REQUEST ERROR !!!")
+		return "", err
+	}
+
+	//fmt.Println("== REQ ==")
+	//fmt.Println(req)
+	//fmt.Println(" VALUE")
+	//fmt.Println(req.Form)
+	//fmt.Println(req.Body)
+
+	xtype := token.TokenType
+	xtype += " "
+	xtype += token.AccessToken
+	req.Header.Set("Authorization", xtype)
+
+	req.WithContext(ctx)
+	//
+
+	client := oauthConfig.Client(ctx, token)
+	resp, err := client.Do(req)
+	//fmt.Println("CLIENT ...", resp.Body)
+	//fmt.Println(client.Transport)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return "", err
+	}
+
+	defer resp.Body.Close()
+
+	fmt.Println("=== GOOD ===")
+	//buf := new(bytes.Buffer)
+	var buf bytes.Buffer
+	buf.ReadFrom(resp.Body)
+	newStr := buf.String()
+	fmt.Println(newStr)
+	fmt.Println("== HA HA ==")
+
+	xbyte := []byte{}
+	xbyte = buf.Bytes()
+	fmt.Println(xbyte)
+
+	var xad map[string]interface{}
+
+	if err := json.Unmarshal(xbyte, &xad); err != nil {
+		fmt.Println("== D ERROR ==")
+		//panic(err)
+		return "", err
+	}
+	fmt.Println(xad["user"])
+
+	xyz := xad["user"]
+
+	fmt.Println(xyz)
+
+	mx := xyz.(map[string]interface{})
+
+	var result string
+
+	for k, v := range mx {
+		//fmt.Println(k)
+		switch k {
+		case "age":
+			//value, _ := v.(float64)
+			fmt.Println("AGE", v)
+			break
+
+		case "displayName":
+			fmt.Println("dispalyName", v)
+			break
+
+		case "encodedId":
+			fmt.Println("User ID", v)
+			result, _ = v.(string)
+			break
+
+		default:
+			break
+		}
+	}
+
+	//fmt.Println(xad[user])
+	/*
+		for i, epoch := range xad {
+			fmt.Println("== LOOP ==")
+			//k, v := epoch
+			fmt.Printf("==== %d ====\n", i)
+
+			//for k, v := range epoch {
+			for k, _ := range epoch {
+				switch k {
+				case "age":
+					fmt.Println("AGE")
+					break
+
+				case "displayName":
+					fmt.Println("dispalyName")
+					break
+
+				case "encodedId":
+					fmt.Println("User ID")
+					break
+
+				default:
+					break
+				}
+			}
+		}
+	*/
+	fmt.Println("==== SDK GET USER PROFILE ==== OK ")
+	return result, nil
+
+}
+
+// Handle User Request and Return the Result
+func HandleUserRequest(w http.ResponseWriter, r *http.Request, token *Token, param url.Values) (interface{}, error) {
+
+	return nil, nil
 }
 
 func handleUser(w http.ResponseWriter, r *http.Request) {
@@ -333,13 +480,14 @@ func handleUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset-utf-8") //
 
-	if err := homeTmpl.ExecuteTemplate(w, "sleep.html", nil); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	//if err := homeTmpl.ExecuteTemplate(w, "sleep.html", nil); err != nil {
+	//	http.Error(w, err.Error(), http.StatusInternalServerError)
+	//}
 	fmt.Println("USER DO ANYTHING ...")
 
 }
 
+/*
 func main() {
 	fmt.Println("=== CALLBACK ADDR ===")
 	fmt.Println(oauthConfig.RedirectURL)
@@ -376,6 +524,93 @@ func main() {
 	fmt.Println(port)
 	http.ListenAndServe(":"+port, nil)
 	//http.ListenAndServe(":"+os.Getenv("PORT"), nil)
+}
+
+
+*/
+
+func SdkGlobalGetProcess(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("==== SERVE GLOBAL GET ====")
+	// Get Token ...
+
+	//session, err := store.Get(r, "fitbit-oauth-go")
+	//if err != nil {
+	//	http.Error(w, err.Error(), http.StatusInternalServerError)
+	//	return
+	//}
+	//token, ok := session.Values["fitbit-oauth-token"].(*oauth2.Token)
+	//if !ok {
+	//	http.Error(w, "Unable to assert token", http.StatusInternalServerError)
+	//	return
+	//}
+
+	// Request Process
+	ctx := context.Background()
+
+	var body io.Reader
+	v := url.Values{
+		"token": {globalToken.AccessToken},
+	}
+	body = strings.NewReader(v.Encode())
+	fmt.Println("=== SAME or NOT ===")
+	fmt.Println(body)
+
+	xSleep := "https://api.fitbit.com/1.2/user/6Z29KN/sleep/date/2018-12-03.json"
+	req, err := http.NewRequest(http.MethodGet, xSleep, body)
+
+	if err != nil {
+		//return nil, err
+		fmt.Println("NEW REQUEST ERROR !!!")
+	}
+
+	xtype := globalToken.TokenType
+	xtype += " "
+	xtype += globalToken.AccessToken
+	req.Header.Set("Authorization", xtype)
+	fmt.Println(xtype)
+
+	req.WithContext(ctx)
+	fmt.Println(req)
+	fmt.Println(req.Header)
+	//
+
+	client := oauthConfig.Client(ctx, globalToken)
+	resp, err := client.Do(req)
+
+	fmt.Println("CLIENT ...", resp.Body)
+	fmt.Println(client.Transport)
+
+	//resp, err := client.Get(uProfile)
+	if err != nil {
+		fmt.Println("GET ERROR, 完了 ...")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Response Process
+	fmt.Println(resp)
+	defer resp.Body.Close()
+
+	globalDecode(resp)
+
+	//fmt.Println("=== GOOD ===")
+	//buf := new(bytes.Buffer)
+	//buf.ReadFrom(resp.Body)
+	//newStr := buf.String()
+	//fmt.Println(newStr)
+	//fmt.Println("== HA HA ==")
+
+	//fmt.Println("==== SERVE GET SLEEP ==== OK ")
+}
+
+func globalDecode(resp *http.Response) {
+	fmt.Println("=== GLOBAL DECODE ===")
+	fmt.Println("=== GOOD ===")
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	newStr := buf.String()
+	fmt.Println(newStr)
+	fmt.Println("== HA HA ==")
 }
 
 func demoServeGetSleep(w http.ResponseWriter, r *http.Request) {
@@ -686,9 +921,9 @@ func demoServeGetUserProfile(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(newStr)
 	fmt.Println("== HA HA ==")
 
-	if err := homeTmpl.ExecuteTemplate(w, "sleep.html", nil); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	//if err := homeTmpl.ExecuteTemplate(w, "sleep.html", nil); err != nil {
+	//	http.Error(w, err.Error(), http.StatusInternalServerError)
+	//}
 
 	fmt.Println("==== SERVE GET USER PROFILE ==== OK ")
 }
@@ -767,9 +1002,9 @@ func demoServeGetUserBodyWeight(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(newStr)
 	fmt.Println("== HA HA ==")
 
-	if err := homeTmpl.ExecuteTemplate(w, "sleep.html", nil); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	//if err := homeTmpl.ExecuteTemplate(w, "sleep.html", nil); err != nil {
+	//	http.Error(w, err.Error(), http.StatusInternalServerError)
+	//}
 
 	fmt.Println("==== SERVE GET USER BODY WEIGHT ==== OK ")
 }
