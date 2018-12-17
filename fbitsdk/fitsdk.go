@@ -106,7 +106,7 @@ func HandleAuthCallback(w http.ResponseWriter, r *http.Request) (*Token, error) 
 	ctx := context.Background()
 	fmt.Println(ctx)
 	fmt.Println()
-	fmt.Println(r.FormValue("code"))
+	//fmt.Println(r.FormValue("code"))
 	token, err := oauthConfig.Exchange(ctx, r.FormValue("code"))
 	if err != nil {
 		fmt.Println("== CB ERROR ==")
@@ -119,7 +119,7 @@ func HandleAuthCallback(w http.ResponseWriter, r *http.Request) (*Token, error) 
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil, err
 	}
-	fmt.Println(session)
+	//fmt.Println(session)
 	session.Values["fitbit-oauth-token"] = token
 	if err := session.Save(r, w); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -128,7 +128,7 @@ func HandleAuthCallback(w http.ResponseWriter, r *http.Request) (*Token, error) 
 
 	var xt oauth2.Token
 	//json.Unmarshal(token, &xt)
-	fmt.Println(session)
+	//fmt.Println(session)
 	//testStruct := MyStruct{"hello world"}
 	reqBodyBytes := new(bytes.Buffer)
 	json.NewEncoder(reqBodyBytes).Encode(token)
@@ -150,7 +150,7 @@ func HandleAuthCallback(w http.ResponseWriter, r *http.Request) (*Token, error) 
 
 	fmt.Println("=== TOKEN ===")
 
-	fmt.Println(xt)
+	//fmt.Println(xt)
 	xtoken := Token{}
 	xtoken.AccessToken = token.AccessToken
 	xtoken.TokenType = token.TokenType
@@ -227,13 +227,14 @@ func sdkGetUserProfile(w http.ResponseWriter, r *http.Request, token *oauth2.Tok
 	//buf := new(bytes.Buffer)
 	var buf bytes.Buffer
 	buf.ReadFrom(resp.Body)
-	newStr := buf.String()
-	fmt.Println(newStr)
+
+	//newStr := buf.String()
+	//fmt.Println(newStr)
 	fmt.Println("== HA HA ==")
 
 	xbyte := []byte{}
 	xbyte = buf.Bytes()
-	fmt.Println(xbyte)
+	//fmt.Println(xbyte)
 
 	var xad map[string]interface{}
 
@@ -242,11 +243,11 @@ func sdkGetUserProfile(w http.ResponseWriter, r *http.Request, token *oauth2.Tok
 		//panic(err)
 		return "", err
 	}
-	fmt.Println(xad["user"])
+	//fmt.Println(xad["user"])
 
 	xyz := xad["user"]
 
-	fmt.Println(xyz)
+	//fmt.Println(xyz)
 
 	mx := xyz.(map[string]interface{})
 
@@ -275,33 +276,34 @@ func sdkGetUserProfile(w http.ResponseWriter, r *http.Request, token *oauth2.Tok
 	}
 
 	//fmt.Println(xad[user])
-	/*
-		for i, epoch := range xad {
-			fmt.Println("== LOOP ==")
-			//k, v := epoch
-			fmt.Printf("==== %d ====\n", i)
 
-			//for k, v := range epoch {
-			for k, _ := range epoch {
-				switch k {
-				case "age":
-					fmt.Println("AGE")
-					break
+	for i, upf := range xad {
+		fmt.Println("== LOOP ==")
+		fmt.Printf("==== %d ====\n", i)
+		//xyz := xad["user"]
+		mxz := upf.(map[string]interface{})
 
-				case "displayName":
-					fmt.Println("dispalyName")
-					break
+		for k, _ := range mxz {
+			switch k {
+			case "age":
+				fmt.Println("AGE - MXZ")
+				break
 
-				case "encodedId":
-					fmt.Println("User ID")
-					break
+			case "displayName":
+				fmt.Println("dispalyName - MXZ")
+				break
 
-				default:
-					break
-				}
+			case "encodedId":
+				fmt.Println("User ID - MXZ")
+				break
+
+			default:
+				break
 			}
 		}
-	*/
+
+	}
+
 	fmt.Println("==== SDK GET USER PROFILE ==== OK ")
 	return result, nil
 
@@ -309,6 +311,43 @@ func sdkGetUserProfile(w http.ResponseWriter, r *http.Request, token *oauth2.Tok
 
 // Handle User Request and Return the Result
 func HandleUserRequest(w http.ResponseWriter, r *http.Request, token *Token, param url.Values) (interface{}, error) {
+	urlStr, err := sdkUrlPrepare(param, token.UserId)
+
+	//
+	ctx := context.Background()
+
+	v := url.Values{
+		"token": {token.AccessToken},
+	}
+
+	var body io.Reader
+	body = strings.NewReader(v.Encode())
+	fmt.Println(body)
+
+	//introspect := "https://api.fitbit.com/1.1/oauth2/introspect"
+	req, err := http.NewRequest(http.MethodPost, urlStr, body)
+
+	if err != nil {
+		//return nil, err
+		fmt.Println("NEW REQUEST ERROR !!!")
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	xtype := token.TokenType
+	xtype += " "
+	xtype += token.AccessToken
+	req.Header.Set("Authorization", xtype)
+
+	req.WithContext(ctx)
+
+	oauth2Token := oauth2.Token{AccessToken: token.AccessToken, TokenType: token.TokenType, RefreshToken: token.RefreshToken, Expiry: token.Expiry}
+
+	client := oauthConfig.Client(ctx, &oauth2Token)
+	resp, err := client.Do(req)
+	//
+	var data interface{}
+	fitDecode(resp, data)
 
 	return nil, nil
 }
