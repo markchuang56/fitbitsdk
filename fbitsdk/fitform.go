@@ -149,16 +149,6 @@ func fitDecode(resp *http.Response, data interface{}) {
 	fmt.Println(resp.TransferEncoding)
 	fmt.Println(resp.Request)
 
-	//var data interface{}
-	//json.Unmarshal(resp.Body, &data)
-	//fmt.Println(data)
-	//fmt.Println(resp.Body.Reader)
-
-	//w.Header().Set("Content-Type", "text/html; charset-utf-8") //
-
-	//if err := homeTmpl.ExecuteTemplate(w, "sleep.html", nil); err != nil {
-	//	http.Error(w, err.Error(), http.StatusInternalServerError)
-	//}
 	fmt.Println("USER DO ANYTHING ...")
 }
 
