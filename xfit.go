@@ -31,6 +31,7 @@ import (
 var (
 	homeTmpl          = template.Must(template.New("home").ParseFiles("templates/table.html"))
 	homeLoggedOutTmpl = template.Must(template.New("loggout").ParseFiles("templates/loggedout.html"))
+	indexTmpl         = template.Must(template.New("index").ParseFiles("templates/sleeps.html"))
 )
 
 func init() {
@@ -109,6 +110,8 @@ func main() {
 	http.HandleFunc("/cb", handleAuthCallback)
 	http.HandleFunc("/user", handleUser)
 
+	http.HandleFunc("/index", demoServeIndex)
+
 	http.HandleFunc("/sleep", demoServeGetSleep)
 	http.HandleFunc("/heartRate", demoServeGetHeartRate)
 	http.HandleFunc("/activities", demoServeGetActivities)
@@ -123,6 +126,14 @@ func main() {
 	}
 	fmt.Println(port)
 	http.ListenAndServe(":"+port, nil)
+}
+
+func demoServeIndex(w http.ResponseWriter, r *http.Request) {
+	//fmt.Fprint(w, `<html><body><a href="/auth/fitbit">Sign in with Fitbit</a></body></html>`)
+	w.Header().Set("Content-Type", "text/html; charset-utf-8") //
+	if err := indexTmpl.ExecuteTemplate(w, "sleeps.html", nil); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func demoServeGetSleep(w http.ResponseWriter, r *http.Request) {
