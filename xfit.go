@@ -25,6 +25,7 @@ import (
 	//"time"
 	fbitsdk "./fbitsdk"
 	"html/template"
+	"io/ioutil"
 	"os"
 )
 
@@ -79,6 +80,20 @@ func handleAuthCallback(w http.ResponseWriter, r *http.Request) {
 	fmt.Println()
 
 	http.Redirect(w, r, "/user", http.StatusFound)
+	/*
+	import ( "strings" )
+
+	var m map[string]string
+	var ss []string
+
+	s := "A=B&C=D&E=F"
+	ss = strings.Split(s, "&")
+	m = make(map[string]string)
+	for _, pair := range ss {
+	    z := strings.Split(pair, "=")
+	    m[z[0]] = z[1]
+	}
+	*/
 }
 
 func handleUser(w http.ResponseWriter, r *http.Request) {
@@ -129,15 +144,40 @@ func main() {
 }
 
 func demoServeIndex(w http.ResponseWriter, r *http.Request) {
+	var body, _ = loadFile("templates/sleeps.html")
+	fmt.Fprintf(w, body)
 	//fmt.Fprint(w, `<html><body><a href="/auth/fitbit">Sign in with Fitbit</a></body></html>`)
-	w.Header().Set("Content-Type", "text/html; charset-utf-8") //
-	if err := indexTmpl.ExecuteTemplate(w, "sleeps.html", nil); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	//w.Header().Set("Content-Type", "text/html; charset-utf-8") //
+	//if err := indexTmpl.ExecuteTemplate(w, "sleeps.html", nil); err != nil {
+	//	http.Error(w, err.Error(), http.StatusInternalServerError)
+	//}
 }
 
 func demoServeGetSleep(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("==== SERVE GET SLEEP ====")
+	//fmt.Println(w)
+	fmt.Println()
+	fmt.Println(r.Method)
+	fmt.Println()
+	fmt.Println(r.URL)
+	fmt.Println()
+	fmt.Println(r.Proto)
+	fmt.Println()
+	fmt.Println(r.Header)
+	fmt.Println()
+	fmt.Println(r.Body)
+	fmt.Println()
+	fmt.Println(r.ContentLength)
+	fmt.Println()
+	fmt.Println(r.TransferEncoding)
+	fmt.Println()
+	fmt.Println(r.Host)
+	fmt.Println()
+	fmt.Println(r.Form)
+	fmt.Println()
+	fmt.Println(r.RequestURI)
+	fmt.Println()
+	fmt.Println(r)
 
 	fmt.Println("==== SERVE GET SLEEP ==== OK ")
 }
@@ -163,4 +203,12 @@ func demoServeGetUserBodyWeight(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("==== SERVE GET USER PROFILE ====")
 
 	fmt.Println("==== SERVE GET USER BODY WEIGHT ==== OK ")
+}
+
+func loadFile(fileName string) (string, error) {
+	bytes, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), nil
 }

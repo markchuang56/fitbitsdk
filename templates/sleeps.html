@@ -1,3 +1,95 @@
+
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Execute Command</title>		
+</head>
+
+<body>
+	
+	<script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function() {
+			$("#execSleepID").on("click", function() {
+				var vYear = $("#id_year").prop('value');
+				var vMon = document.getElementById("id_mon").value;
+				var vDay = document.getElementById("id_day").value;
+				
+				var vHr = document.getElementById("id_hr").value;
+				var vMin = document.getElementById("id_min").value;
+				var vSec = document.getElementById("id_sec").value;
+				$.ajax({
+					url: "/sleep",
+					method: "GET",
+					data: {
+						'year': vYear,
+						'mon': vMon,
+						'day': vDay,
+						'hr': vHr,
+						'min': vMin,
+						'sec': vSec
+					},
+					success: function(data) {
+						$("#responseSleep").html(data);
+					},
+					error: function (msg) { // ajax請求失敗後觸發的方法
+						alert(msg); // 彈出錯誤信息
+					}
+				});
+			});
+		});
+	</script>
+	
+	
+	
+	<button id="execSleepID">GET SLEEP</button>
+	<div id="responseSleep"></div><br>
+	
+	
+<!-- 年 -->	
+	<p>年 月 日 </p>
+	<form oninput="dx.value=parseInt(id_year.value)">年 : 
+	<input type="range" min="2018" max="2019" id="id_year" value="2018" name="in_name">
+	= <output id="gox" name="dx" for="id_year"></output>
+	</form>
+<!-- 月 -->
+	<form oninput="x_mon.value=parseInt(id_mon.value)">月 : 
+	<input type="range" min="10" max="11" id="id_mon" value="10">
+	= <output name="x_mon" for="id_mon"></output>
+	</form>
+	
+<!-- 日 -->
+	<form oninput="x_day.value=parseInt(id_day.value)">日 : 
+	<input type="range" min="1" max="31" id="id_day" value="15">
+	= <output name="x_day" for="id_day"></output> 
+	</form>
+		
+		<br>
+<!-- 時 -->
+	<form oninput="x_hr.value=parseInt(id_hr.value)">時 : 
+	<input type="range" min="0" max="23" id="id_hr" value="12">
+	= <output name="x_hr" for="id_hr"></output>
+	</form>
+			
+<!-- 分 -->
+	<form oninput="x_min.value=parseInt(id_min.value)">分 : 
+	<input type="range" min="0" max="59" id="id_min" value="30">
+	= <output name="x_min" for="id_min"></output>
+	</form>
+							
+<!-- 秒 -->
+	<form oninput="x_sec.value=parseInt(id_sec.value)"> 秒 : 
+	<input type="range" min="0" max="59" id="id_sec" value="30">
+	= <output name="x_sec" for="id_sec"></output>
+	</form>
+	
+	
+</body>
+
+</html>
+
+
+<!--
 <div class="log-form">
 	<h1>Index</h1>
 	<hr>
@@ -6,3 +98,4 @@
 			<button type="submit">Logout</button>
 		</form>	
 </div>
+-->
